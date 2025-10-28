@@ -1,0 +1,17 @@
+[project]
+name = "intelligent-work-assistant"
+version = "0.1.0"
+description = "Personal Intelligent Work Assistant running on local computer"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.50.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/guominjia/intelligent-work-assistant"
+Repository = "https://github.com/guominjia/intelligent-work-assistant.git"
+Issues = "https://github.com/guominjia/intelligent-work-assistant/issues"
+
+[project.scripts]
+iwa = "intelligent_work_assistant.main:main"
