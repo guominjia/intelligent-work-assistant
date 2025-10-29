@@ -24,9 +24,24 @@ Install the package:
 pip install intelligent-work-assistant
 ```
 
+## Download models
+1. Download Embedding model
+```
+modelscope download --model "OpenVINO/Qwen3-Embedding-0.6B-int8-ov" --local_dir Qwen3-Embedding-0.6B-int8-ov
+```
+
+2. Download Text-Generation model
+```
+modelscope download --model "OpenVINO/Qwen3-0.6B-int8-ov" --local_dir Qwen3-0.6B-int8-ov
+```
+
 ## How to Run
 ```bash
-iwa
+iwa --model <Text-Generate model> --embed-model <Embedding model>
+```
+Assume that you downloaded **Qwen3-Embedding-0.6B-int8-ov** and **Qwen3-0.6B-int8-ov** model, the command should be
+```
+iwa --model Qwen3-0.6B-int8-ov --embed-model Qwen3-Embedding-0.6B-int8-ov
 ```
 
 This will launch the Streamlit application in your default web browser.

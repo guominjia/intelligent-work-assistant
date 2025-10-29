@@ -1,10 +1,14 @@
 [project]
 name = "intelligent-work-assistant"
-version = "0.1.0"
+version = "0.2.0"
 description = "Personal Intelligent Work Assistant running on local computer"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "modelscope>=1.31.0",
+    "openvino>=2025.3.0",
+    "openvino-genai>=2025.3.0.0",
+    "optimum[openvino]>=2.0.0",
     "streamlit>=1.50.0",
 ]
 
