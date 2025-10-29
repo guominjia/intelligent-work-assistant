@@ -10,6 +10,7 @@ def main():
         st.session_state.llm = OpenVinoLlm(args.model, args.device, max_tokens=args.max_tokens)
     llm = st.session_state.llm
 
+    sidebar_nav()
     history_chats()
     if prompt := st.chat_input("What can i help?"):
         full_response = real_chat(llm, prompt)
@@ -22,6 +23,13 @@ def parse_args():
     parser.add_argument('--device', default="CPU", help="The device on where the model run, default CPU")
     parser.add_argument('--max-tokens', default=0, help="The device on where the model run, default CPU")
     return parser.parse_args()
+
+def sidebar_nav():
+    with st.sidebar:
+        st.markdown("### 🏠 Navigation")
+
+        if st.button("New Conversation"):
+            st.session_state.history = []
 
 def history_chats():
     if 'history' not in st.session_state:
