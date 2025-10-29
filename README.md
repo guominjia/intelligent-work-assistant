@@ -54,13 +54,21 @@ IntelligentWorkAssistant/
 │   └── intelligent_work_assistant/
 │       ├── __init__.py
 │       ├── __main__.py
-│       ├── main.py          # Entry point and launcher
-│       └── st_main.py       # Main Streamlit application
+│       ├── main.py          # Entry point and launcher with CLI arguments
+│       ├── model.py         # OpenVINO LLM wrapper with streaming support
+│       └── st_main.py       # Main Streamlit multi-page application
 ├── tests/
 │   └── __init__.py
+├── threads-history/         # Chat history storage (auto-created)
 ├── pyproject.toml           # Project configuration and dependencies
 └── README.md
 ```
+
+### Key Files
+
+- **main.py**: Command-line interface entry point that validates models and launches Streamlit
+- **model.py**: OpenVINO GenAI wrapper class for LLM inference with streaming capabilities
+- **st_main.py**: Streamlit application with multi-page navigation, chat interface, and history management
 
 ## Development
 
