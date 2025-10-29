@@ -32,11 +32,26 @@ def parse_args():
     return parser.parse_args()
 
 def sidebar_nav():
-    with st.sidebar:
-        st.markdown("### 🏠 Navigation")
+    home_pg = st.Page(home, title="Home", icon=":material/home:")
+    new_chat = st.Page(new_conversation, title="new", icon=":material/add:", url_path="new")
+    login_pg = st.Page(login, title="Log in", icon=":material/login:")
+    logout_pg = st.Page(logout, title="Log out", icon=":material/logout:")
+    pg = st.navigation({"Home":[home_pg], "Chat":[new_chat], "Log in/out":[login_pg, logout_pg]})
+    pg.run()
 
-        if st.button("New Conversation"):
-            st.session_state.history = []
+def home():
+    pass
+
+def login():
+    st.write("log in")
+
+def logout():
+    if st.button("Log out"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+def new_conversation():
+    st.session_state.history = []
 
 def history_chats():
     if 'history' not in st.session_state:
