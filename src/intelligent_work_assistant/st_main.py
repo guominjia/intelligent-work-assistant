@@ -1,5 +1,8 @@
 import argparse
 import re
+import os
+import json
+import uuid
 import streamlit as st
 from intelligent_work_assistant.model import OpenVinoLlm
 
@@ -10,18 +13,22 @@ def main():
         st.session_state.llm = OpenVinoLlm(args.model, args.device, max_tokens=args.max_tokens)
     llm = st.session_state.llm
 
+    if 'current_thread' not in st.session_state:
+        st.session_state.current_thread = str(uuid.uuid4())
+
     sidebar_nav()
     history_chats()
     if prompt := st.chat_input("What can i help?"):
         full_response = real_chat(llm, prompt)
-        add_chat_to_history([{"role": "user", "content": prompt}, {"role": "assistant", "content": full_response}])
+        add_chat_to_history([{"role": "user", "content": prompt}, {"role": "assistant", "content": full_response}], args.history_path)
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', help="The Text-Generation model")
     parser.add_argument('--embed-model', help="The Embedding model")
     parser.add_argument('--device', default="CPU", help="The device on where the model run, default CPU")
-    parser.add_argument('--max-tokens', default=0, help="The device on where the model run, default CPU")
+    parser.add_argument('--max-tokens', default=0, help="The max tokens to generate, default 0 mean no limitation")
+    parser.add_argument('--history-path', default="threads-history", help="The path to where save the history")
     return parser.parse_args()
 
 def sidebar_nav():
@@ -44,9 +51,17 @@ def history_chats():
             else:
                 st.markdown(message["content"])
 
-def add_chat_to_history(chat):
+def add_chat_to_history(chat, history_path):
     for c in chat:
         st.session_state.history.append(c)
+    save_history_to_file(history_path)
+
+def save_history_to_file(history_path):
+    if not os.path.isdir(history_path):
+        os.mkdir(history_path)
+    
+    with open(f'{history_path}/{st.session_state.current_thread}', 'w', encoding='utf8') as wf:
+        json.dump(st.session_state.history, wf)
 
 def real_chat(llm, prompt):
     with st.chat_message("user"):
