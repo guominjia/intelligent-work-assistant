@@ -118,11 +118,11 @@ def real_chat(llm, prompt):
 
     return full_response
 
-def extract_think_body(full_response: str) -> str:
+def extract_think_body(full_response: str) -> tuple[str, str]:
     match = re.search(r'<think>(.*?)</think>(.*)', full_response, re.DOTALL)
     if match:
         return match.group(1), match.group(2)
-    return ""
+    return "", full_response
 
 if __name__ == '__main__':
     main()
