@@ -16,7 +16,7 @@ def main():
     if 'current_thread' not in st.session_state:
         st.session_state.current_thread = str(uuid.uuid4())
 
-    sidebar_nav()
+    sidebar_nav(args.history_path)
     history_chats()
     if prompt := st.chat_input("What can i help?"):
         full_response = real_chat(llm, prompt)
@@ -31,12 +31,12 @@ def parse_args():
     parser.add_argument('--history-path', default="threads-history", help="The path to where save the history")
     return parser.parse_args()
 
-def sidebar_nav():
+def sidebar_nav(history_path):
     home_pg = st.Page(home, title="Home", icon=":material/home:")
     new_chat = st.Page(new_conversation, title="new", icon=":material/add:", url_path="new")
     login_pg = st.Page(login, title="Log in", icon=":material/login:")
     logout_pg = st.Page(logout, title="Log out", icon=":material/logout:")
-    pg = st.navigation({"Home":[home_pg], "Chat":[new_chat], "Log in/out":[login_pg, logout_pg]})
+    pg = st.navigation({"Home":[home_pg], "Chat":[new_chat], "History": create_thread_pages(history_path), "Log in/out":[login_pg, logout_pg]})
     pg.run()
 
 def home():
@@ -52,6 +52,21 @@ def logout():
 
 def new_conversation():
     st.session_state.history = []
+    st.session_state.current_thread = str(uuid.uuid4())
+
+def create_thread_pages(history_path):
+    pages = []
+    for history in os.listdir(history_path):
+        with open(f"{history_path}/{history}", encoding="utf8") as rf:
+            title = json.load(rf)[0]["content"]
+        pages.append(st.Page(lambda: history_page(history_path), title=title, url_path=f"chats-{history}"))
+    return pages
+
+def history_page(history_path):
+    history = st.context.url.split('/')[-1][len('chats-'):]
+    with open(f"{history_path}/{history}", encoding="utf8") as rf:
+        st.session_state.history = json.load(rf)
+        st.session_state.current_thread = history
 
 def history_chats():
     if 'history' not in st.session_state:
