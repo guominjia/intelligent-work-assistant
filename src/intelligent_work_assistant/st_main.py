@@ -11,16 +11,14 @@ def main():
 
     if 'llm' not in st.session_state:
         st.session_state.llm = OpenVinoLlm(args.model, args.device, max_tokens=args.max_tokens)
-    llm = st.session_state.llm
 
     if 'current_thread' not in st.session_state:
         st.session_state.current_thread = str(uuid.uuid4())
 
+    if 'history_path' not in st.session_state:
+        st.session_state.history_path = args.history_path
+
     sidebar_nav(args.history_path)
-    history_chats()
-    if prompt := st.chat_input("What can i help?"):
-        full_response = real_chat(llm, prompt)
-        add_chat_to_history([{"role": "user", "content": prompt}, {"role": "assistant", "content": full_response}], args.history_path)
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -40,7 +38,10 @@ def sidebar_nav(history_path):
     pg.run()
 
 def home():
-    pass
+    history_chats()
+    if prompt := st.chat_input("What can i help?"):
+        full_response = real_chat(st.session_state.llm, prompt)
+        add_chat_to_history([{"role": "user", "content": prompt}, {"role": "assistant", "content": full_response}], st.session_state.history_path)
 
 def login():
     st.write("log in")
@@ -53,6 +54,7 @@ def logout():
 def new_conversation():
     st.session_state.history = []
     st.session_state.current_thread = str(uuid.uuid4())
+    home()
 
 def create_thread_pages(history_path):
     pages = []
@@ -67,6 +69,7 @@ def history_page(history_path):
     with open(f"{history_path}/{history}", encoding="utf8") as rf:
         st.session_state.history = json.load(rf)
         st.session_state.current_thread = history
+    home()
 
 def history_chats():
     if 'history' not in st.session_state:
