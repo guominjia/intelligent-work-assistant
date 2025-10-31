@@ -2,26 +2,6 @@ import requests
 import json
 import time
 
-tools = [
-    {
-        'type': 'function',
-        'function': {
-            'name': 'get_weather',
-            'description': 'Get the current weather in a given city name.',
-            'parameters': {
-            'type': 'object',
-            'properties': {
-                'city': {
-                'type': 'str',
-                'description': 'City name'
-                }
-            },
-            'required': ['city']
-            }
-        }
-    }
-]
-
 def call_tool(tool_name: str, tool_args: dict) -> str:
     return tools_map[tool_name](**tool_args)
 
