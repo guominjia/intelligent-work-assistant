@@ -3,6 +3,7 @@ import re
 import os
 import json
 import uuid
+from typing import List, Tuple
 import streamlit as st
 from intelligent_work_assistant.model import OpenVinoLlm
 
@@ -37,6 +38,45 @@ def sidebar_nav(history_path):
     pg = st.navigation({"Home":[home_pg], "Chat":[new_chat], "History": create_thread_pages(history_path), "Log in/out":[login_pg, logout_pg]})
     pg.run()
 
+tools = [
+    {
+        'type': 'function',
+        'function': {
+            'name': 'get_weather',
+            'description': 'Get the current weather in a given city name.',
+            'parameters': {
+            'type': 'object',
+            'properties': {
+                'city': {
+                'type': 'str',
+                'description': 'City name'
+                }
+            },
+            'required': ['city']
+            }
+        }
+    }
+]
+
+import requests
+
+def call_tool(tool_name: str, tool_args: dict) -> str:
+    if tool_name == "get_weather":
+        key_selection = {
+            "current_condition": [
+                "temp_C",
+                "FeelsLikeC",
+                "humidity",
+                "weatherDesc",
+                "observation_time",
+            ],
+        }
+        resp = requests.get(f"https://wttr.in/{tool_args['city']}?format=j1")
+        resp.raise_for_status()
+        resp = resp.json()
+        ret = {k: {_v: resp[k][0][_v] for _v in v} for k, v in key_selection.items()}
+        return json.dumps(ret, ensure_ascii=False)
+    
 def home():
     history_chats()
     if prompt := st.chat_input("What can i help?"):
@@ -77,10 +117,10 @@ def history_chats():
     for message in st.session_state.history:
         with st.chat_message(message["role"]):
             if '<think>' in message["content"]:
-                think, body = extract_think_body(message["content"])
-                with st.expander('think'):
-                    st.write(think)
-                st.markdown(body)
+                for think, body in extract_think_body(message["content"]):
+                    with st.expander('think'):
+                        st.write(think)
+                    st.markdown(body)
             else:
                 st.markdown(message["content"])
 
@@ -105,27 +145,40 @@ def real_chat(llm, prompt):
         response_placeholder = st.empty()
         full_response = ""
 
-        def stream():
+        def stream(prompt):
             nonlocal full_response
             for c in llm.stream(prompt):
                 full_response += c
                 yield c
 
         llm.start_chat()
-        response_placeholder.write_stream(stream())
+        response_placeholder.write_stream(stream(st.session_state.llm.build_react_prompt(prompt, tools)))
         llm.finish_chat()
+        tool = st.session_state.llm.parse_tool_call(full_response)
+        if tool:
+            result = call_tool(tool['name'], tool['arguments'])
+            messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content":"", "tool_calls": [{"type": "function", "function": tool}]}, {"role": "tool", "content": result}]
+            print(messages)
+            llm.start_chat()
+            response_placeholder.write_stream(stream(st.session_state.llm.build_react_prompt(messages, tools)))
+            llm.finish_chat()
 
-        think, body = extract_think_body(full_response)
-        think_placeholder.write(think)
-        response_placeholder.markdown(body)
+        for i, (think, body) in enumerate(extract_think_body(full_response)):
+            if i==0:
+                think_placeholder.write(think)
+                response_placeholder.markdown(body)
+            else:
+                with st.expander('think'):
+                    st.write(think)
+                st.markdown(body)
 
     return full_response
 
-def extract_think_body(full_response: str) -> str:
-    match = re.search(r'<think>(.*?)</think>(.*)', full_response, re.DOTALL)
-    if match:
-        return match.group(1), match.group(2)
-    return ""
+def extract_think_body(full_response: str) -> List[Tuple[str, str]]:
+    matches = re.findall(r'<think>(.*?)</think>(.*)', full_response, re.DOTALL)
+    if matches:
+        return [(think, body) for think, body in matches]
+    return [("","")]
 
 if __name__ == '__main__':
     main()
