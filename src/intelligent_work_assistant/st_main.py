@@ -6,6 +6,7 @@ import uuid
 from typing import List, Tuple
 import streamlit as st
 from intelligent_work_assistant.model import OpenVinoLlm
+from intelligent_work_assistant.tools import tools, call_tool
 
 def main():
     args = parse_args()
@@ -38,45 +39,6 @@ def sidebar_nav(history_path):
     pg = st.navigation({"Home":[home_pg], "Chat":[new_chat], "History": create_thread_pages(history_path), "Log in/out":[login_pg, logout_pg]})
     pg.run()
 
-tools = [
-    {
-        'type': 'function',
-        'function': {
-            'name': 'get_weather',
-            'description': 'Get the current weather in a given city name.',
-            'parameters': {
-            'type': 'object',
-            'properties': {
-                'city': {
-                'type': 'str',
-                'description': 'City name'
-                }
-            },
-            'required': ['city']
-            }
-        }
-    }
-]
-
-import requests
-
-def call_tool(tool_name: str, tool_args: dict) -> str:
-    if tool_name == "get_weather":
-        key_selection = {
-            "current_condition": [
-                "temp_C",
-                "FeelsLikeC",
-                "humidity",
-                "weatherDesc",
-                "observation_time",
-            ],
-        }
-        resp = requests.get(f"https://wttr.in/{tool_args['city']}?format=j1")
-        resp.raise_for_status()
-        resp = resp.json()
-        ret = {k: {_v: resp[k][0][_v] for _v in v} for k, v in key_selection.items()}
-        return json.dumps(ret, ensure_ascii=False)
-    
 def home():
     history_chats()
     if prompt := st.chat_input("What can i help?"):
