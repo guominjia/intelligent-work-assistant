@@ -116,8 +116,7 @@ def real_chat(llm, prompt):
         llm.start_chat()
         response_placeholder.write_stream(stream(st.session_state.llm.build_react_prompt(prompt, tools)))
         llm.finish_chat()
-        tool = st.session_state.llm.parse_tool_call(full_response)
-        if tool:
+        while tool := st.session_state.llm.parse_tool_call(full_response):
             result = call_tool(tool['name'], tool['arguments'])
             messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content":"", "tool_calls": [{"type": "function", "function": tool}]}, {"role": "tool", "content": result}]
             print(messages)
