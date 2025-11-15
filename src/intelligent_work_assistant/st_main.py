@@ -109,20 +109,17 @@ def real_chat(llm, prompt):
 
         def stream(prompt):
             nonlocal full_response
+            llm.start_chat()
             for c in llm.stream(prompt):
                 full_response += c
                 yield c
+            llm.finish_chat()
 
-        llm.start_chat()
         response_placeholder.write_stream(stream(st.session_state.llm.build_react_prompt(prompt, tools)))
-        llm.finish_chat()
         while tool := st.session_state.llm.parse_tool_call(full_response):
             result = call_tool(tool['name'], tool['arguments'])
             messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content":"", "tool_calls": [{"type": "function", "function": tool}]}, {"role": "tool", "content": result}]
-            print(messages)
-            llm.start_chat()
             response_placeholder.write_stream(stream(st.session_state.llm.build_react_prompt(messages, tools)))
-            llm.finish_chat()
 
         for i, (think, body) in enumerate(extract_think_body(full_response)):
             if i==0:
