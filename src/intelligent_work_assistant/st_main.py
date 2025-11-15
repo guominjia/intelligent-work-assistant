@@ -78,13 +78,20 @@ def history_chats():
         st.session_state.history = []
     for message in st.session_state.history:
         with st.chat_message(message["role"]):
-            if '<think>' in message["content"]:
-                for think, body in extract_think_body(message["content"]):
-                    with st.expander('think'):
-                        st.write(think)
-                    st.markdown(body)
-            else:
-                st.markdown(message["content"])
+            content = message["content"]
+
+            thinks, tool_calls, body = extract_response_components(content)
+
+            for i, tool_call in enumerate(tool_calls):
+                with st.expander(f"🔧 Tool Call {i+1}", expanded=False):
+                    st.code(tool_call, language="json")
+
+            for i, think in enumerate(thinks):
+                with st.expander(f"💭 Think {i+1}", expanded=False):
+                    st.write(think)
+
+            if body:
+                st.markdown(body)
 
 def add_chat_to_history(chat, history_path):
     for c in chat:
@@ -103,7 +110,6 @@ def real_chat(llm, prompt):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        think_placeholder = st.expander('think')
         response_placeholder = st.empty()
         full_response = ""
 
@@ -121,22 +127,43 @@ def real_chat(llm, prompt):
             messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content":"", "tool_calls": [{"type": "function", "function": tool}]}, {"role": "tool", "content": result}]
             response_placeholder.write_stream(stream(st.session_state.llm.build_react_prompt(messages, tools)))
 
-        for i, (think, body) in enumerate(extract_think_body(full_response)):
-            if i==0:
-                think_placeholder.write(think)
-                response_placeholder.markdown(body)
-            else:
-                with st.expander('think'):
-                    st.write(think)
-                st.markdown(body)
+        thinks, tool_calls, body = extract_response_components(full_response)
+
+        for i, tool_call in enumerate(tool_calls):
+            with st.expander(f"🔧 Tool Call {i+1}", expanded=False):
+                st.code(tool_call, language="json")
+
+        for i, think in enumerate(thinks):
+            with st.expander(f"💭 Think {i+1}", expanded=False):
+                st.write(think)
+
+        response_placeholder.markdown(body)
 
     return full_response
 
-def extract_think_body(full_response: str) -> List[Tuple[str, str]]:
-    matches = re.findall(r'<think>(.*?)</think>(.*)', full_response, re.DOTALL)
-    if matches:
-        return [(think, body) for think, body in matches]
-    return [("","")]
+def extract_response_components(full_response: str) -> Tuple[List[str], List[str], str]:
+    """
+    Extract think blocks, tool_call blocks, and the main body from the response.
+    Returns: (list of thinks, list of tool_calls, main body text)
+    """
+    thinks = []
+    tool_calls = []
+    body = full_response
+    
+    # Extract all <think> blocks
+    think_matches = re.findall(r'<think>(.*?)</think>', full_response, re.DOTALL)
+    thinks = [match.strip() for match in think_matches]
+    
+    # Extract all <tool_call> blocks
+    tool_call_matches = re.findall(r'<tool_call>(.*?)</tool_call>', full_response, re.DOTALL)
+    tool_calls = [match.strip() for match in tool_call_matches]
+    
+    # Remove all <think> and <tool_call> blocks from body
+    body = re.sub(r'<think>.*?</think>', '', full_response, flags=re.DOTALL)
+    body = re.sub(r'<tool_call>.*?</tool_call>', '', body, flags=re.DOTALL)
+    body = body.strip()
+    
+    return thinks, tool_calls, body
 
 if __name__ == '__main__':
     main()
