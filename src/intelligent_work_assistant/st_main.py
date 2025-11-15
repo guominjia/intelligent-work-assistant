@@ -137,7 +137,8 @@ def real_chat(llm, prompt):
             with st.expander(f"💭 Think {i+1}", expanded=False):
                 st.write(think)
 
-        response_placeholder.markdown(body)
+        response_placeholder.write("")
+        st.markdown(body)
 
     return full_response
 
