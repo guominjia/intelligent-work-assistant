@@ -5,6 +5,7 @@ description = "Personal Intelligent Work Assistant running on local computer"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "chromadb>=1.3.5",
     "modelscope>=1.31.0",
     "openvino>=2025.3.0",
     "openvino-genai>=2025.3.0.0",
