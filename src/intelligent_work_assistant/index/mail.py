@@ -3,6 +3,7 @@ from .embed import embedding_function, query_function
 import chromadb
 from hashlib import md5
 from datetime import datetime
+from transformers import AutoTokenizer
 
 # Execute the PowerShell command using subprocess.run()
 # The powershell.exe executable is a required part of the command list
@@ -55,8 +56,15 @@ $($item.Body)
 """
 
 class MailSplitter:
-    @staticmethod
-    def split(content, chunk_size, chunk_overlap):
+    def __init__(self, model_dir):
+        self.model_dir = model_dir
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_dir, 
+            padding_side="left", 
+            trust_remote_code=True
+        )
+
+    def split(self, content, chunk_size, chunk_overlap):
         # Validate input parameters
         if not isinstance(content, str):
             raise TypeError("content must be a string")
@@ -67,11 +75,20 @@ class MailSplitter:
         if chunk_overlap >= chunk_size:
             raise ValueError("chunk_overlap must be less than chunk_size")
         
+        # Tokenize the content
+        tokens = self.tokenizer.tokenize(content)
+        
+        # Handle empty content case
+        if not tokens:
+            return []
+        
         chunks = []
         step = chunk_size - chunk_overlap
-        for i in range(0, len(content), step):
-            chunk = content[i:i + chunk_size]
-            chunks.append(chunk)
+        for i in range(0, len(tokens), step):
+            chunk_tokens = tokens[i:i + chunk_size]
+            chunk_text = self.tokenizer.convert_tokens_to_string(chunk_tokens)
+            chunks.append(chunk_text)
+        
         return chunks
 
 def push_to_database(database_name, docs, embeds, metas, collection_name="mail_collection"):
@@ -95,8 +112,8 @@ def query_mail(query, k_first, embed_model, database_name, collection_name="mail
         collection = client.create_collection(name=collection_name)
     return collection.query(query_function(query, embed_model), n_results=k_first)
 
-def index_mail(embed_model, database_name, mail_count=3):
-    splitter = MailSplitter()
+def index_mail(embed_model, database_name, mail_count=20):
+    splitter = MailSplitter(embed_model)
     for i in range(mail_count):
         command = mail_command.format(mail_index=i)
         mail_content = run_command(command).stdout
